@@ -35,6 +35,10 @@
         // Platforms
         let platforms = [];
         let score = 0;
+        let onPlatform = false;
+        let currentlyOnPlatform = null; // Track the current platform player is on
+        let lastPlatform = null; // Variable to track the last platform
+        let reachedPlatforms = new Set(); // Initialize a set to track reached platforms
 
         for(let i = 0; i < 10; i++) {
         platforms.push({
@@ -103,11 +107,6 @@
                 player.velY = 0;
             }
 
-            let onPlatform = false;
-            let currentlyOnPlatform = null; // Track the current platform player is on
-            let lastPlatform = null; // New variable to track the last platform
-            let justLanded = false; // New flag to indicate if the player has just landed on a platform
-
             // Platform collision
             platforms.forEach((platform, index) => {
                 if (
@@ -120,42 +119,35 @@
                     player.jumping = false;
                     player.velY = 0;
                     player.y = platform.y - player.height;
-                    onPlatform = true;
                     currentlyOnPlatform = platform; // Track the current platform
                     
                     platform.standTime += 1; // Increment stand time if on platform
 
+                    // Check if this platform has not been reached before
+                    if (!reachedPlatforms.has(platform)) {
+                        score += 10; // Increment score by 10 if it's a new platform
+                        reachedPlatforms.add(platform); // Mark this platform as reached
+                    }
+
+                    onPlatform = true;
                 }  else {
                     platform.standTime = 0; // Reset stand time if not standing on the platform
                 }   
 
                 // Check if platform should fall
-                if (platform.standTime > 180) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
+                if (platform.standTime > 170) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
                     platforms.splice(index, 1); // Remove platform from array
+                    reachedPlatforms.delete(platform); // Remove from reachedPlatforms set if it was the one that fell
                     if (lastPlatform === platform)           lastPlatform = null; // Reset lastPlatform if it was the one that fell
                 }
             });
-
-            // After checking all platforms
-            if (currentlyOnPlatform){
-                if (lastPlatform !== currentlyOnPlatform) {
-                    // Player has landed on a new platform, so increment the score
-                    if (!onPlatform) { // Ensure score is incremented only once per platform
-                        score += 10;
-                        onPlatform = true; // Mark that player is now considered on a platform for scoring purposes
-                    }
-                    lastPlatform = currentlyOnPlatform; // Update lastPlatform to the current one
-                }
-            } else {
-                // Player is not on any platform; reset the onPlatform flag to allow score increment upon next landing
-                onPlatform = false;
-            }
 
             // Check after iterating all platforms if we're not on a platform
             if (!onPlatform) {
                 currentlyOnPlatform = null; // Reset lastPlatform if we're in the air
                 onPlatform = false; // Ensure onPlatform correctly reflects player state
             }
+
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 

@@ -41,12 +41,12 @@
         let reachedPlatforms = new Set(); // Initialize a set to track reached platforms
 
         for(let i = 0; i < 10; i++) {
-        platforms.push({
-            x: Math.random() * (canvas.width - 50),
-            y: canvas.height - (100 * i) - 50,
-            width: 100,
-            height: 10,
-            standTime: 0 // New property to track standing time
+            platforms.push({
+                x: Math.random() * (canvas.width - 50),
+                y: canvas.height - (100 * i) - 50,
+                width: 100,
+                height: 10,
+                standTime: 0 // New property to track standing time
             });
         }
 
@@ -62,6 +62,17 @@
         window.addEventListener('keyup', function(e) {
             keys[e.keyCode] = false;
         });
+
+        function addEnemiesToPlatforms() {
+        // Assuming there's a platforms array
+            platforms.forEach((platform, index) => {
+                // Assign an enemy to 5% of platforms randomly
+                if (Math.random() < 0.05) {
+                    const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
+                    platform.enemy = { type: enemyType, x: platform.x, y: platform.y - 20 }; // Example enemy position
+                }
+            });
+        }
 
         function updateGame() {
             // Check key inputs
@@ -135,7 +146,7 @@
                 }   
 
                 // Check if platform should fall
-                if (platform.standTime > 170) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
+                if (platform.standTime > 160) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
                     platforms.splice(index, 1); // Remove platform from array
                     reachedPlatforms.delete(platform); // Remove from reachedPlatforms set if it was the one that fell
                     if (lastPlatform === platform)           lastPlatform = null; // Reset lastPlatform if it was the one that fell
@@ -155,16 +166,51 @@
             ctx.fillStyle = 'red';
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
-            // Draw platforms
-            platforms.forEach(platform => {
+            // Draw platforms and label for platforms divisible by 10
+            platforms.forEach((platform, index) => {
                 ctx.fillStyle = 'black';
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
-            });
 
+                // Check if platform index is divisible by 10 and label it
+                if ((index + 1) % 10 === 0) {
+                    ctx.fillStyle = 'white'; // Contrast color for visibility
+                    ctx.fillText(`${index + 1}`, platform.x + 5, platform.y + 20);
+                }
+
+                // Draw enemies if they exist on the platform
+                if (platform.enemy) {
+                    ctx.fillStyle = platform.enemy.type === 'Type1' ? 'blue' : 'green';
+                    ctx.fillRect(platform.enemy.x, platform.enemy.y, 20, 20); // Example enemy size
+                    // For Type2 enemies, update their position here for movement
+                    if (platform.enemy.type === 'Type2') {
+                        // Example movement logic for Type2 enemy
+                        platform.enemy.x += platform.enemyDirection * 2; // Move side to side
+                        // Change direction if hitting the platform edges
+                        if (platform.enemy.x <= platform.x || platform.enemy.x + 20 >= platform.x + platform.width) {
+                            platform.enemyDirection *= -1;
+                        }
+                    }
+                }
+            });
+            
+            // Call this function after initializing/creating platforms
+            addEnemiesToPlatforms();
+            
             // Draw score
             ctx.fillStyle = 'black';
             ctx.font = '20px Arial';
             ctx.fillText(`Score: ${score}`, 10, 30);
+
+            // Player and enemy collision detection (simplified example)
+            platforms.forEach(platform => {
+                if (platform.enemy && player.x < platform.enemy.x + 20 &&
+                    player.x + player.width > platform.enemy.x &&
+                    player.y < platform.enemy.y + 20 &&
+                    player.y + player.height > platform.enemy.y) {
+                    // Handle player death or game over
+                    console.log('Player touched an enemy! Game Over!');
+                }
+            });
 
             requestAnimationFrame(updateGame);
         }

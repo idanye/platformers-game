@@ -104,6 +104,8 @@
             }
 
             let onPlatform = false;
+            let lastPlatform = null; // New variable to track the last platform
+            let justLanded = false; // New flag to indicate if the player has just landed on a platform
 
             // Platform collision
             platforms.forEach((platform, index) => {
@@ -119,24 +121,33 @@
                     player.y = platform.y - player.height;
                     onPlatform = true;
                     platform.standTime += 1; // Increment stand time if on platform
-                    // Reset score increment timer if player is jumping off
-                    if (platform.standTime === 1) score += 10; // Increase score when landing on a new platform
-                } else {
-                platform.standTime = 0; // Reset stand time if not standing on the platform
+                    
+                     // If not on any platform, reset stand time for all platforms
+                    if (!onPlatform) {
+                        onPlatform = true;
+                        if (lastPlatform !== platform) { // Ensure it's a new platform
+                            score += 10; // Increase score for landing on a new platform
+                            lastPlatform = platform; // Update lastPlatform to the current one
+                        }
+                    }
+                    platform.standTime += 1; // Increment stand time if on platform
+
+                }  else {
+                    platform.standTime = 0; // Reset stand time if not standing on the platform
                 }   
+
                 // Check if platform should fall
                 if (platform.standTime > 180) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
-                platforms.splice(index, 1); // Remove platform from array
+                    platforms.splice(index, 1); // Remove platform from array
+                    if (lastPlatform === platform)           lastPlatform = null; // Reset lastPlatform if it was the one that fell
                 }
             });
 
-            // If not on any platform, reset stand time for all platforms
+            // Check after iterating all platforms if we're not on a platform
             if (!onPlatform) {
-            platforms.forEach(platform => {
-                platform.standTime = 0;
-                });
+                lastPlatform = null; // Reset lastPlatform if we're in the air
+                onPlatform = false; // Ensure onPlatform correctly reflects player state
             }
-
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 

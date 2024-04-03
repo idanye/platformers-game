@@ -104,6 +104,7 @@
             }
 
             let onPlatform = false;
+            let currentlyOnPlatform = null; // Track the current platform player is on
             let lastPlatform = null; // New variable to track the last platform
             let justLanded = false; // New flag to indicate if the player has just landed on a platform
 
@@ -120,16 +121,8 @@
                     player.velY = 0;
                     player.y = platform.y - player.height;
                     onPlatform = true;
-                    platform.standTime += 1; // Increment stand time if on platform
+                    currentlyOnPlatform = platform; // Track the current platform
                     
-                     // If not on any platform, reset stand time for all platforms
-                    if (!onPlatform) {
-                        onPlatform = true;
-                        if (lastPlatform !== platform) { // Ensure it's a new platform
-                            score += 10; // Increase score for landing on a new platform
-                            lastPlatform = platform; // Update lastPlatform to the current one
-                        }
-                    }
                     platform.standTime += 1; // Increment stand time if on platform
 
                 }  else {
@@ -143,9 +136,24 @@
                 }
             });
 
+            // After checking all platforms
+            if (currentlyOnPlatform){
+                if (lastPlatform !== currentlyOnPlatform) {
+                    // Player has landed on a new platform, so increment the score
+                    if (!onPlatform) { // Ensure score is incremented only once per platform
+                        score += 10;
+                        onPlatform = true; // Mark that player is now considered on a platform for scoring purposes
+                    }
+                    lastPlatform = currentlyOnPlatform; // Update lastPlatform to the current one
+                }
+            } else {
+                // Player is not on any platform; reset the onPlatform flag to allow score increment upon next landing
+                onPlatform = false;
+            }
+
             // Check after iterating all platforms if we're not on a platform
             if (!onPlatform) {
-                lastPlatform = null; // Reset lastPlatform if we're in the air
+                currentlyOnPlatform = null; // Reset lastPlatform if we're in the air
                 onPlatform = false; // Ensure onPlatform correctly reflects player state
             }
             // Clear canvas

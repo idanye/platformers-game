@@ -20,21 +20,22 @@
         const friction = 0.8;
         const baseJump = -10; // Base jump velocity
 
-        // Player
-        let player = {
-            x: canvas.width / 2,
-            y: canvas.height - 150,
-            width: 20,
-            height: 20,
-            speed: 5,
-            velX: 0,
-            velY: 0,
-            jumping: false
-        };
+        // // Player
+        // let player = {
+        //     x: canvas.width / 2,
+        //     y: canvas.height - 150,
+        //     width: 20,
+        //     height: 20,
+        //     speed: 5,
+        //     velX: 0,
+        //     velY: 0,
+        //     jumping: false,
+        //     score: 0
+        // };
 
         // Platforms
         let platforms = [];
-        let score = 0;
+        let scores = [];
         let onPlatform = false;
         let currentlyOnPlatform = null; // Track the current platform player is on
         let lastPlatform = null; // Variable to track the last platform
@@ -49,6 +50,70 @@
                 standTime: 0 // New property to track standing time
             });
         }
+        
+        function initializePlayer(playername='') {
+            // Initialize the player object
+            player = {
+                x: canvas.width / 2,
+                y: canvas.height - 150,
+                width: 20,
+                height: 20,
+                speed: 5,
+                velX: 0,
+                velY: 0,
+                jumping: false,
+                score: 0,
+                name: '' // Assuming you want to store the name within the player object
+            };
+
+            if (playername === '') {
+                // Ask the player for their name
+                player.name = prompt("Please enter your name:", "Player Name");
+
+                // If the player doesn't enter a name, provide a default one
+                if (player.name === null || player.name.trim() === "") {
+                    player.name = "Player Name";
+                }
+            }
+        }
+
+        // Call the initializePlayer function to start the process
+        initializePlayer();
+
+        function resetGame() {
+            // Show the canvas again
+            canvas.style.display = 'block';
+
+            // Clear the entire canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            initializePlayer(player.name);
+
+            // Reset platforms and add enemies again
+            platforms = [];
+            for (let i = 0; i < 1000; i++) {
+                platforms.push({
+                    x: Math.random() * (canvas.width - 50),
+                    y: canvas.height - (100 * i) - 50,
+                    width: 100,
+                    height: 10,
+                    standTime: 0
+                });
+            }
+            
+            addEnemiesToPlatforms(); // Re-add enemies to the platforms
+
+            // Reset other game state variables if needed
+            onPlatform = false;
+            currentlyOnPlatform = null;
+            lastPlatform = null;
+            reachedPlatforms.clear(); // Clear the set of reached platforms
+
+            // If you have a game loop timer or requestAnimationFrame, you may need to restart that too
+            // Example:
+            // startGameLoop();
+        }
+
 
         // Key Listener
         let keys = [];
@@ -79,6 +144,71 @@
                     }
                 }
             });
+        }
+
+        // Function to update the leaderboard - simplistic version
+        function updateLeaderboard(currentScore) {
+            scores.push(currentScore);
+            scores = scores.sort((a, b) => b - a).slice(0, 10); // Sort scores in descending order and keep top 10
+            // Update leaderboard display logic here...
+        }
+
+        // Function to show the game over screen
+        function showGameOver(currentScore) {
+            canvas.style.display = 'none';
+
+            // Update the leaderboard before showing the game over screen
+            updateLeaderboard(currentScore);
+
+            // Create or show the Game Over overlay
+            const gameOverScreen = document.createElement('div');
+            gameOverScreen.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: red;
+                font-size: 24px;
+                text-align: center;
+                z-index: 1000; // Ensure it's on top
+                background: white;
+                padding: 20px;
+                border: 2px solid black;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);`;
+
+            const gameOverText = document.createElement('div');
+            gameOverText.textContent = 'GAME OVER';
+            gameOverText.style.cssText = 'margin-bottom: 20px;';
+
+            // Add a Play Again button
+            const playAgainBtn = document.createElement('button');
+            playAgainBtn.textContent = 'Play Again';
+            playAgainBtn.style.cssText = 'display: block; margin: 10px auto;';
+            playAgainBtn.onclick = () => {
+                document.body.removeChild(gameOverScreen); // Remove the game over screen
+                // Show game elements again
+                canvas.style.display = 'block';
+                resetGame(); // Reset the game state for a new playthrough
+            };
+
+            // Add leaderboard
+            const leaderboard = document.createElement('div');
+            leaderboard.style.cssText = 'text-align: left;';
+            const leaderboardTitle = document.createElement('div');
+            leaderboardTitle.textContent = 'Leaderboard:';
+            leaderboardTitle.style.cssText = 'font-weight: bold; margin-bottom: 10px;';
+            leaderboard.appendChild(leaderboardTitle);
+            scores.forEach((score, index) => {
+                const scoreElement = document.createElement('div');
+                scoreElement.textContent = `${index + 1}. ${score}`;
+                leaderboard.appendChild(scoreElement);
+            });
+
+            gameOverScreen.appendChild(gameOverText);
+            gameOverScreen.appendChild(playAgainBtn);
+            gameOverScreen.appendChild(leaderboard);
+
+            document.body.appendChild(gameOverScreen);
         }
 
         function updateGame() {
@@ -143,7 +273,7 @@
 
                     // Check if this platform has not been reached before
                     if (!reachedPlatforms.has(platform)) {
-                        score += 10; // Increment score by 10 if it's a new platform
+                        player.score += 10; // Increment score by 10 if it's a new platform
                         reachedPlatforms.add(platform); // Mark this platform as reached
                     }
 
@@ -208,19 +338,19 @@
             // Draw score
             ctx.fillStyle = 'black';
             ctx.font = '20px Arial';
-            ctx.fillText(`Score: ${score}`, 10, 30);
+            ctx.fillText(`Score: ${player.score}`, 10, 30);
 
             // Player and enemy collision detection (simplified example)
             platforms.forEach(platform => {
                 if (platform.enemy && player.x < platform.enemy.x + 20 &&
-                    player.x + player.width > platform.enemy.x &&
-                    player.y < platform.enemy.y + 20 &&
-                    player.y + player.height > platform.enemy.y) {
-                    // Handle player death or game over
-                    console.log('Player touched an enemy! Game Over!');
+                player.x + player.width > platform.enemy.x &&
+                player.y < platform.enemy.y + 20 &&
+                player.y + player.height > platform.enemy.y) {
+                // Handle player death or game over differently
+                showGameOver(player.score); // Assuming 'player.score' holds the current score
                 }
             });
-
+ 
             requestAnimationFrame(updateGame);
         }
 

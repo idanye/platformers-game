@@ -40,7 +40,7 @@
         let lastPlatform = null; // Variable to track the last platform
         let reachedPlatforms = new Set(); // Initialize a set to track reached platforms
 
-        for(let i = 0; i < 10; i++) {
+        for (let i = 0; i < 1000; i++) {
             platforms.push({
                 x: Math.random() * (canvas.width - 50),
                 y: canvas.height - (100 * i) - 50,
@@ -69,7 +69,14 @@
                 // Assign an enemy to 5% of platforms randomly
                 if (Math.random() < 0.05) {
                     const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
-                    platform.enemy = { type: enemyType, x: platform.x, y: platform.y - 20 }; // Example enemy position
+                    platform.enemy = {
+                        type: enemyType,
+                        x: platform.x + platform.width / 2 - 10, // Center enemy on platform
+                        y: platform.y - 20, // Place enemy above the platform
+                    };
+                    if (enemyType === 'Type2') {
+                        platform.enemyDirection = Math.random() < 0.5 ? -1 : 1; // Randomly set initial direction
+                    }
                 }
             });
         }
@@ -149,7 +156,7 @@
                 if (platform.standTime > 160) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
                     platforms.splice(index, 1); // Remove platform from array
                     reachedPlatforms.delete(platform); // Remove from reachedPlatforms set if it was the one that fell
-                    if (lastPlatform === platform)           lastPlatform = null; // Reset lastPlatform if it was the one that fell
+                    if (lastPlatform === platform)         lastPlatform = null; // Reset lastPlatform if it was the one that fell
                 }
             });
 
@@ -174,6 +181,7 @@
                 // Check if platform index is divisible by 10 and label it
                 if ((index + 1) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
+                    console.log(index + 1)
                     ctx.fillText(`${index + 1}`, platform.x + 5, platform.y + 20);
                 }
 
@@ -181,6 +189,7 @@
                 if (platform.enemy) {
                     ctx.fillStyle = platform.enemy.type === 'Type1' ? 'blue' : 'green';
                     ctx.fillRect(platform.enemy.x, platform.enemy.y, 20, 20); // Example enemy size
+                    
                     // For Type2 enemies, update their position here for movement
                     if (platform.enemy.type === 'Type2') {
                         // Example movement logic for Type2 enemy

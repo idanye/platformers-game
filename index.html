@@ -16,9 +16,9 @@
         const ctx = canvas.getContext('2d');
 
         // Game settings
-        const gravity = 0.5;
-        const friction = 0.8;
-        const baseJump = -10; // Base jump velocity
+        const gravity = 0.3;
+        const friction = 0.7;
+        const baseJump = -8; // Base jump velocity
 
         // Platforms
         let platforms = [];
@@ -29,7 +29,33 @@
         let reachedPlatforms = new Set(); // Initialize a set to track reached platforms
         let gameOverScreenExists = false; // New flag to check if game over screen already exists
         let player; // Define player globally
- 
+        let highestPlatform = 0; // Initialize at 0 or the starting platform number
+        let initialNumberOfPlatforms = 10;
+
+        function createPlatform(index) {
+            return {
+                x: Math.random() * (canvas.width - 50),
+                y: canvas.height - (100 * index) - 50,
+                width: 100,
+                height: 10,
+                number: index, // Store the sequential number of the platform
+                standTime: 0
+            };
+        }
+
+        function addPlatformIfNeeded() {
+            // Assuming 'player' has a 'y' property that determines the height
+            const platformIndex = Math.floor((canvas.height - player.y) / 100);
+            
+            if (platformIndex > highestPlatform) {
+                highestPlatform = platformIndex;
+                platforms.push(createPlatform(highestPlatform));
+                
+                // Now we add an enemy to the new platform with the previously defined logic
+                addEnemiesToPlatforms(); 
+            }
+        }
+
         function initializePlayer(playerName='') {
             // Initialize the player object
             player = {
@@ -65,21 +91,16 @@
 
             initializePlayer(player.name);
 
-            // Reset platforms and add enemies again
+            // Start with an empty platforms array or with an initial set of platforms
             platforms = [];
-
-            for (let i = 0; i < 1000; i++) {
-                platforms.push({
-                    x: Math.random() * (canvas.width - 50),
-                    y: canvas.height - (100 * i) - 50,
-                    width: 100,
-                    height: 10,
-                    standTime: 0
-                });
+            
+            // Create an initial set of platforms
+            for (let i = 0; i < initialNumberOfPlatforms; i++) {
+                platforms.push(createPlatform(i));
             }
             
-            addEnemiesToPlatforms(); // Re-add enemies to the platforms
-
+            highestPlatform = initialNumberOfPlatforms - 1;
+            
             // Reset other game state variables if needed
             onPlatform = false;
             currentlyOnPlatform = null;
@@ -106,6 +127,9 @@
         function addEnemiesToPlatforms() {
         // Assuming there's a platforms array
             platforms.forEach((platform, index) => {
+                // Reset any existing enemy on the platform
+                delete platform.enemy; 
+                
                 // Assign an enemy to 5% of platforms randomly
                 if (Math.random() < 0.05) {
                     const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
@@ -120,9 +144,6 @@
                 }
             });
         }
-
-        // Call the initializePlayer function to start the process
-        initializePlayer();
 
         // Function to update the leaderboard - simplistic version
         function updateLeaderboard(currentScore, playerName) {
@@ -190,6 +211,8 @@
             }
         }
 
+        // Call the initializePlayer function to start the process
+        initializePlayer();
         resetGame();
         
         function updateGame() {
@@ -285,15 +308,15 @@
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
             // Draw platforms and label for platforms divisible by 10
-            platforms.forEach((platform, index) => {
+            platforms.forEach((platform) => {
                 ctx.fillStyle = 'black';
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
 
                 // Check if platform index is divisible by 10 and label it
-                if ((index + 1) % 10 === 0) {
+                if ((platform.number + 1) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
-                    console.log(index + 1)
-                    ctx.fillText(`${index + 1}`, platform.x + 5, platform.y + 20);
+                    console.log(platform.number + 1)
+                    ctx.fillText(`${platform.number + 1}`, platform.x + 5, platform.y + 20);
                 }
 
                 // Draw enemies if they exist on the platform
@@ -315,7 +338,8 @@
             
             // Call this function after initializing/creating platforms
             addEnemiesToPlatforms();
-            
+            addPlatformIfNeeded();
+
             // Draw score
             ctx.fillStyle = 'black';
             ctx.font = '20px Arial';
@@ -327,8 +351,8 @@
                 player.x + player.width > platform.enemy.x &&
                 player.y < platform.enemy.y + 20 &&
                 player.y + player.height > platform.enemy.y) {
-                // Handle player death or game over differently
-                showGameOver(player.score); // Assuming 'player.score' holds the current score
+                    // Handle player death or game over differently
+                    showGameOver(player.score); // Assuming 'player.score' holds the current score
                 }
             });
  

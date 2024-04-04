@@ -28,8 +28,9 @@
         let lastPlatform = null; // Variable to track the last platform
         let reachedPlatforms = new Set(); // Initialize a set to track reached platforms
         let gameOverScreenExists = false; // New flag to check if game over screen already exists
+        let player; // Define player globally
  
-        function initializePlayer(playername='') {
+        function initializePlayer(playerName='') {
             // Initialize the player object
             player = {
                 x: canvas.width / 2,
@@ -41,10 +42,10 @@
                 velY: 0,
                 jumping: false,
                 score: 0,
-                name: '' // Assuming you want to store the name within the player object
+                name: playerName // Assuming you want to store the name within the player object
             };
 
-            if (playername === '') {
+            if (playerName === '') {
                 // Ask the player for their name
                 player.name = prompt("Please enter your name:");
 
@@ -54,9 +55,6 @@
                 }
             }
         }
-
-        // Call the initializePlayer function to start the process
-        initializePlayer();
 
         function resetGame() {
             // Show the canvas again
@@ -87,6 +85,9 @@
             currentlyOnPlatform = null;
             lastPlatform = null;
             reachedPlatforms.clear(); // Clear the set of reached platforms
+
+            // Start the game loop
+            requestAnimationFrame(updateGame);
         }
 
         // Key Listener
@@ -120,11 +121,25 @@
             });
         }
 
+        // Call the initializePlayer function to start the process
+        initializePlayer();
+
+        // Function to update the leaderboard - simplistic version
+        function updateLeaderboard(currentScore, playerName) {
+            // Add the current score and player name as an object to the scores array
+            scores.push({ score: currentScore, name: playerName });
+
+            // Sort scores in descending order and keep top 10
+            scores.sort((a, b) => b.score - a.score);
+            scores = scores.slice(0, 10);
+        }
+
         // Function to update the leaderboard - simplistic version
         function showGameOver(currentScore) {
             if (!gameOverScreenExists) {
                 canvas.style.display = 'none';
-                updateLeaderboard(currentScore);
+                updateLeaderboard(currentScore, player.name);
+                
                 const gameOverScreen = document.createElement('div');
                 gameOverScreen.style.cssText = `
                     position: absolute;
@@ -160,9 +175,9 @@
                 leaderboardTitle.style.cssText = 'font-weight: bold; margin-bottom: 10px;';
                 leaderboard.appendChild(leaderboardTitle);
                 
-                scores.forEach((score, index) => {
+                scores.forEach((entry, index) => {
                     const scoreElement = document.createElement('div');
-                    scoreElement.textContent = `${index + 1}. ${score}`;
+                    scoreElement.textContent = `${index + 1}. ${entry.name} - ${entry.score}`;
                     leaderboard.appendChild(scoreElement);
                     });
 
@@ -175,6 +190,8 @@
             }
         }
 
+        resetGame();
+        
         function updateGame() {
             // Check key inputs
             if (keys[39]) { // right arrow

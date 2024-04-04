@@ -239,8 +239,35 @@
             player.velX *= friction;
             player.velY += gravity;
 
-            player.x += player.velX;
-            player.y += player.velY;
+            // player.x += player.velX;
+            // player.y += player.velY;
+
+            // Predictive correction for horizontal movement
+            let nextX = player.x + player.velX;
+
+            if (nextX >= canvas.width - player.width) {
+                player.x = canvas.width - player.width;
+                player.velX = 0; // Optionally stop the horizontal movement when hitting the boundary
+            } else if (nextX <= 0) {
+                player.x = 0;
+                player.velX = 0; // Optionally stop the horizontal movement when hitting the boundary
+            } else {
+                player.x = nextX;
+            }
+
+            // Predictive correction for vertical movement
+            let nextY = player.y + player.velY;
+            
+            if (nextY >= canvas.height - player.height) {
+                player.y = canvas.height - player.height;
+                player.velY = 0; // Stop the vertical movement when hitting the bottom boundary
+                player.jumping = false;
+            } else if (nextY <= 0) {
+                player.y = 0;
+                player.velY = 0; // Optionally stop the vertical movement when hitting the top boundary
+            } else {
+                player.y = nextY;
+            }
 
             // Screen scroll
             if (player.y < canvas.height / 4) {
@@ -261,10 +288,12 @@
                 player.x = 0;
             }
 
-            if(player.y >= canvas.height - player.height){
+            if (player.y >= canvas.height - player.height) {
                 player.y = canvas.height - player.height;
                 player.jumping = false;
                 player.velY = 0;
+            } else if (player.y <= 0) { // Prevents the player from going above the top border
+                player.y = 0;
             }
 
             // Platform collision

@@ -100,6 +100,7 @@
             }
             
             highestPlatform = initialNumberOfPlatforms - 1;
+            addEnemiesToPlatforms();
             
             // Reset other game state variables if needed
             onPlatform = false;
@@ -125,22 +126,29 @@
         });
 
         function addEnemiesToPlatforms() {
-        // Assuming there's a platforms array
-            platforms.forEach((platform, index) => {
-                // Reset any existing enemy on the platform
-                delete platform.enemy; 
-                
-                // Assign an enemy to 5% of platforms randomly
-                if (Math.random() < 0.05) {
-                    const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
-                    platform.enemy = {
-                        type: enemyType,
-                        x: platform.x + platform.width / 2 - 10, // Center enemy on platform
-                        y: platform.y - 20, // Place enemy above the platform
-                    };
-                    if (enemyType === 'Type2') {
-                        platform.enemyDirection = Math.random() < 0.5 ? -1 : 1; // Randomly set initial direction
-                    }
+            // Clear existing enemies first
+            platforms.forEach(platform => delete platform.enemy);
+        
+            // Pick one platform to have an enemy, ensuring only 5% (one out of initial 10) has an enemy
+            let numberOfEnemies = Math.ceil(0.05 * initialNumberOfPlatforms);
+            // Create a set of unique platform indices to assign enemies to
+            let uniqueIndices = new Set();
+
+            while (uniqueIndices.size < numberOfEnemies) {
+                let randomIndex = Math.floor(Math.random() * platforms.length);
+                uniqueIndices.add(randomIndex);
+            }
+            
+            // Assign an enemy to each unique index
+            uniqueIndices.forEach(index => {
+                const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
+                platforms[index].enemy = {
+                    type: enemyType,
+                    x: platforms[index].x + platforms[index].width / 2 - 10, // Center enemy on platform
+                    y: platforms[index].y - 20, // Place enemy above the platform
+                };
+                if (enemyType === 'Type2') {
+                    platforms[index].enemyDirection = Math.random() < 0.5 ? -1 : 1; // Randomly set initial direction
                 }
             });
         }
@@ -336,8 +344,6 @@
                 }
             });
             
-            // Call this function after initializing/creating platforms
-            addEnemiesToPlatforms();
             addPlatformIfNeeded();
 
             // Draw score

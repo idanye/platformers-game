@@ -60,7 +60,7 @@
             // Initialize the player object
             player = {
                 x: canvas.width / 2,
-                y: canvas.height - 150,
+                y: canvas.height - 20,
                 width: 20,
                 height: 20,
                 speed: 5,
@@ -239,9 +239,6 @@
             player.velX *= friction;
             player.velY += gravity;
 
-            // player.x += player.velX;
-            // player.y += player.velY;
-
             // Predictive correction for horizontal movement
             let nextX = player.x + player.velX;
 
@@ -257,7 +254,7 @@
 
             // Predictive correction for vertical movement
             let nextY = player.y + player.velY;
-            
+
             if (nextY >= canvas.height - player.height) {
                 player.y = canvas.height - player.height;
                 player.velY = 0; // Stop the vertical movement when hitting the bottom boundary

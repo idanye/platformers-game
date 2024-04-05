@@ -32,6 +32,20 @@
         let highestPlatform = 0; // Initialize at 0 or the starting platform number
         let initialNumberOfPlatforms = 10;
 
+        // Define variables for the assets
+        var background = new Image();
+        var platformImage = new Image(); // Renamed variable
+
+        // Set the source file paths for the assets
+        background.src = 'sky-background.jpg'; 
+        platformImage.src = 'green-platforms.jpg';
+
+        // Make sure to wait for the assets to load before trying to draw them
+        background.onload = function() {
+            // Now that the background is loaded, you can draw it to the canvas
+            ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+        };
+
         function createPlatform(index) {
             return {
                 x: Math.random() * (canvas.width - 50),
@@ -337,34 +351,39 @@
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Draw the background
+            ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
             // Draw player
             ctx.fillStyle = 'red';
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
             // Draw platforms and label for platforms divisible by 10
-            platforms.forEach((platform) => {
+            platforms.forEach((plat) => {
                 ctx.fillStyle = 'black';
-                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
-
+                // ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+                
+                ctx.drawImage(platformImage, plat.x, plat.y, plat.width, plat.height);
+                
                 // Check if platform index is divisible by 10 and label it
-                if ((platform.number + 1) % 10 === 0) {
+                if ((plat.number + 1) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
-                    console.log(platform.number + 1)
-                    ctx.fillText(`${platform.number + 1}`, platform.x + 5, platform.y + 20);
+                    console.log(plat.number + 1)
+                    ctx.fillText(`${plat.number + 1}`, plat.x + 5, plat.y + 20);
                 }
 
                 // Draw enemies if they exist on the platform
-                if (platform.enemy) {
-                    ctx.fillStyle = platform.enemy.type === 'Type1' ? 'blue' : 'green';
-                    ctx.fillRect(platform.enemy.x, platform.enemy.y, 20, 20); // Example enemy size
+                if (plat.enemy) {
+                    ctx.fillStyle = plat.enemy.type === 'Type1' ? 'blue' : 'green';
+                    ctx.fillRect(plat.enemy.x, plat.enemy.y, 20, 20); // Example enemy size
                     
                     // For Type2 enemies, update their position here for movement
-                    if (platform.enemy.type === 'Type2') {
+                    if (plat.enemy.type === 'Type2') {
                         // Example movement logic for Type2 enemy
-                        platform.enemy.x += platform.enemyDirection * 2; // Move side to side
-                        // Change direction if hitting the platform edges
-                        if (platform.enemy.x <= platform.x || platform.enemy.x + 20 >= platform.x + platform.width) {
-                            platform.enemyDirection *= -1;
+                        plat.enemy.x += plat.enemyDirection * 2; // Move side to side
+                        // Change direction if hitting the plat edges
+                        if (plat.enemy.x <= plat.x || plat.enemy.x + 20 >= plat.x + plat.width) {
+                            plat.enemyDirection *= -1;
                         }
                     }
                 }

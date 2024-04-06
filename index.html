@@ -23,14 +23,18 @@
         // Platforms
         let platforms = [];
         let scores = [];
+
         let onPlatform = false;
         let currentlyOnPlatform = null; // Track the current platform player is on
         let lastPlatform = null; // Variable to track the last platform
         let reachedPlatforms = new Set(); // Initialize a set to track reached platforms
-        let gameOverScreenExists = false; // New flag to check if game over screen already exists
-        let player; // Define player globally
         let highestPlatform = 0; // Initialize at 0 or the starting platform number
         let initialNumberOfPlatforms = 10;
+
+        let gameOverScreenExists = false; // New flag to check if game over screen already exists
+        let player; // Define player globally
+        let fallDuration = 0; // Tracks how long the player has been falling
+        let hasPeaked = false;
 
         // Define variables for the assets
         var background = new Image();
@@ -52,7 +56,7 @@
                 y: canvas.height - (100 * index) - 50,
                 width: 100,
                 height: 10,
-                number: index, // Store the sequential number of the platform
+                number: index,
                 standTime: 0
             };
         }
@@ -280,14 +284,28 @@
                 player.y = nextY;
             }
 
+            // Within your game update loop or function
+            // If the player is jumping and reaches the peak of the jump
+            if (player.jumping && player.velY > 0) {
+                hasPeaked = true; // The player has peaked in their jump
+            }
+
             // Screen scroll
             if (player.y < canvas.height / 4) {
                 player.y += Math.abs(player.velY);
                 platforms.forEach(platform => {
-                    platform.y += Math.abs(player.velY);
+                    const deltaY = Math.abs(player.velY); // Calculate once, use for both platform and enemy
+                    platform.y += deltaY;
+                    if (platform.enemy) { // Adjust enemy's y position along with its platform
+                        platform.enemy.y += deltaY;
+                    }
                     if (platform.y > canvas.height) {
                         platform.y = 0;
                         platform.x = Math.random() * (canvas.width - platform.width);
+                        // Reset enemy position as well if platform resets to top
+                        if (platform.enemy) {
+                            platform.enemy.y = platform.y - 20;
+                        }
                     }
                 });
             }
@@ -342,10 +360,19 @@
                 }
             });
 
-            // Check after iterating all platforms if we're not on a platform
-            if (!onPlatform) {
-                currentlyOnPlatform = null; // Reset lastPlatform if we're in the air
-                onPlatform = false; // Ensure onPlatform correctly reflects player state
+            // If not on a platform and falling
+            if (!onPlatform && player.velY < 0 && hasPeaked) {
+                fallDuration++;
+            } else {
+                fallDuration = 0; // Reset if on a platform, moving upwards, or hasn't peaked yet
+                if (onPlatform || player.velY >= 0) {
+                    hasPeaked = false; // Reset hasPeaked if the player lands or starts going up again
+                }
+            }
+
+            // Game over condition remains the same
+            if (fallDuration > 1  || player.y > canvas.height - player.height) {
+                showGameOver();
             }
 
             // Clear canvas

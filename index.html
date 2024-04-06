@@ -28,8 +28,10 @@
         let currentlyOnPlatform = null; // Track the current platform player is on
         let lastPlatform = null; // Variable to track the last platform
         let reachedPlatforms = new Set(); // Initialize a set to track reached platforms
-        let highestPlatform = 0; // Initialize at 0 or the starting platform number
+        let highestPlatform = 10; // Initialize at the starting platform number
         let initialNumberOfPlatforms = 10;
+        let platformCount = 0; // Tracks the total number of platforms created
+
 
         let gameOverScreenExists = false; // New flag to check if game over screen already exists
         let player; // Define player globally
@@ -52,27 +54,74 @@
             ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
         };
 
-        function createPlatform(index) {
-            return {
-                x: Math.random() * (canvas.width - 50),
-                y: canvas.height - (100 * index) - 50,
-                width: 100,
+        function createPlatform(checkOverlap = true) {
+            let minVerticalDistance = 50; // Minimum vertical distance between platforms
+            let maxVerticalDistance = 150; // Maximum vertical distance to ensure platforms are reachable
+
+            // Find the last platform's Y position
+            let lastPlatform = platforms.length > 0 ? platforms[platforms.length - 1] : null;
+            let lastY = lastPlatform ? lastPlatform.y : canvas.height - 50;
+            
+            // Calculate newY for the new platform
+            let newY = lastY - minVerticalDistance - Math.floor(Math.random() * (maxVerticalDistance - minVerticalDistance));
+            if (newY < 0) {
+                newY = canvas.height - 50; // Reset newY if it goes out of bounds
+            }
+
+            // Define width, with every 10th platform being wider
+            let width = 100;
+            if (platformCount % 10 === 0) {
+                width = canvas.width; // Make the platform wider
+            }
+
+            // Increment platformCount to ensure a unique number for each platform
+            platformCount++;
+
+            let platform = {
+                x: Math.random() * (canvas.width - width),
+                y: newY,
+                width: width,
                 height: 10,
-                number: index,
-                standTime: 0
+                number: platformCount, // Use platformCount for a unique identifier
+                standTime: 0,
+                moving: Math.random() < 0.06, // 6% chance to move up and down
+                direction: 1, // Direction for moving platforms
+                maxHeight: newY - 50, // Maximum height for moving platforms
+                minHeight: newY + 50, // Minimum height for moving platforms
             };
+
+            // Ensure that the new platform does not overlap with existing ones
+            if (checkOverlap && platforms.length > 0) {
+                let overlap;
+                let attempts = 0;
+                do {
+                    overlap = false;
+                    for (let i = 0; i < platforms.length; i++) {
+                        let other = platforms[i];
+                        if (Math.abs(platform.y - other.y) < platform.height + 10 && platform.x < other.x + other.width && platform.x + platform.width > other.x) {
+                            // Adjust newY to avoid overlap
+                            platform.y = other.y - platform.height - Math.random() * (50 - 100) - 50; // Ensure newY is above and not overlapping
+                            if (platform.y < 0) { // If newY is out of bounds, reset it near the top
+                                platform.y = 10 + Math.random() * 40;
+                            }
+                            overlap = true;
+                            break; // Exit loop to recheck after adjustment
+                        }
+                    }
+                    attempts++;
+                    if (attempts > 100) break; // Prevent infinite loop by limiting attempts
+                } while (overlap);
+            }
+
+            return platform;
         }
 
         function addPlatformIfNeeded() {
-            // Assuming 'player' has a 'y' property that determines the height
-            const platformIndex = Math.floor((canvas.height - player.y) / 100);
-            
-            if (platformIndex > highestPlatform) {
-                highestPlatform = platformIndex;
-                platforms.push(createPlatform(highestPlatform));
-                
-                // Now we add an enemy to the new platform with the previously defined logic
-                addEnemiesToPlatforms(); 
+           // Adjusted to add platforms at the top
+            if (player.y < 100) { // Example condition to add new platform at top
+                let newPlatform = createPlatform(true); // Temporarily disable overlap check for demonstration
+                newPlatform.y = Math.min(...platforms.map(p => p.y)) - Math.random() * (50 - 100) - 100; // New platform above the highest one
+                platforms.push(newPlatform);
             }
         }
 
@@ -88,7 +137,7 @@
                 velY: 0,
                 jumping: false,
                 score: 0,
-                name: playerName // Assuming you want to store the name within the player object
+                name: playerName
             };
 
             if (playerName === '') {
@@ -113,13 +162,15 @@
 
             // Start with an empty platforms array or with an initial set of platforms
             platforms = [];
-            
+            platformCount = 0; // Reset platformCount if you want to start numbering from 1 again
+            highestPlatform = 0; // Reset highest platform tracker
+
+
             // Create an initial set of platforms
             for (let i = 0; i < initialNumberOfPlatforms; i++) {
-                platforms.push(createPlatform(i));
+                platforms.push(createPlatform(false));
             }
             
-            highestPlatform = initialNumberOfPlatforms - 1;
             addEnemiesToPlatforms();
             
             // Reset other game state variables if needed
@@ -164,7 +215,7 @@
                 const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
                 platforms[index].enemy = {
                     type: enemyType,
-                    x: platforms[index].x + platforms[index].width / 2 - 10, // Center enemy on platform
+                    x: platforms[index].x + (platforms[index].width - 20) / 2, // Center enemy on platform
                     y: platforms[index].y - 20, // Place enemy above the platform
                 };
                 if (enemyType === 'Type2') {
@@ -259,6 +310,7 @@
             player.velX *= friction;
             player.velY += gravity;
 
+            // Collision with the canvas edges
             // Predictive correction for horizontal movement
             let nextX = player.x + player.velX;
 
@@ -312,22 +364,6 @@
                 });
             }
 
-            // Collision with the canvas edges
-            if (player.x >= canvas.width - player.width) {
-                player.x = canvas.width - player.width;
-            } else if (player.x <= 0) {
-                player.x = 0;
-            }
-
-            if (player.y >= canvas.height - player.height) {
-                player.y = canvas.height - player.height;
-                player.jumping = false;
-                player.velY = 0;
-            } else if (player.y <= 0) { // Prevents the player from going above the top border
-                player.y = 0;
-            }
-
-            // Platform collision
             platforms.forEach((platform, index) => {
                 if (
                     player.x < platform.x + platform.width &&
@@ -359,13 +395,13 @@
                     platforms.splice(index, 1); // Remove platform from array
                     reachedPlatforms.delete(platform); // Remove from reachedPlatforms set if it was the one that fell
                     if (lastPlatform === platform)         lastPlatform = null; // Reset lastPlatform if it was the one that fell
+                     // If the player is falling (no platforms below) and has reached peak fall velocity, game over
+                    if (!onPlatform && platform.standTime > 180) {
+                        showGameOver(player.score);
+                    }
                 }
             });
 
-            // Game over condition remains the same
-            if (player.y >= canvas.height - player.height) {
-                showGameOver();
-            }
 
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -381,10 +417,10 @@
                 ctx.drawImage(platformImage, plat.x, plat.y, plat.width, plat.height);
                 
                 // Check if platform index is divisible by 10 and label it
-                if ((plat.number + 1) % 10 === 0) {
+                if ((plat.number) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
-                    console.log(plat.number + 1)
-                    ctx.fillText(`${plat.number + 1}`, plat.x + 5, plat.y + 20);
+                    console.log(plat.number)
+                    ctx.fillText(`${plat.number}`, plat.x + 5, plat.y + 20);
                 }
 
                 // Draw enemies if they exist on the platform

@@ -58,13 +58,16 @@
         background.src = 'sky-background.jpg'; 
         platformImage.src = 'green-platforms.jpg';
         playerImage.src = 'girl-player.png'
-        starImage.scr = 'star.png'
+        starImage.src = 'star.png'
 
         // Make sure to wait for the assets to load before trying to draw them
         background.onload = function() {
             // Now that the background is loaded, you can draw it to the canvas
             ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
         };
+
+        
+
 
         function createPlatform(checkOverlap = true) {
             let minVerticalDistance = 50; // Minimum vertical distance between platforms
@@ -96,7 +99,7 @@
                 height: 10,
                 number: platformCount, // Use platformCount for a unique identifier
                 standTime: 0,
-                moving: Math.random() < 0.06, // 6% chance to move up and down
+                moving: false, // 6% chance to move up and down
                 direction: 1, // Direction for moving platforms
                 maxHeight: newY - 50, // Maximum height for moving platforms
                 minHeight: newY + 50, // Minimum height for moving platforms
@@ -475,6 +478,10 @@
             platforms.forEach((plat) => {
                 ctx.drawImage(platformImage, plat.x, plat.y, plat.width, plat.height);
                 
+                if (plat.hasStar && plat.star) {
+                    ctx.drawImage(plat.star.image, plat.star.x, plat.star.y, plat.star.width, plat.star.height);
+                }
+
                 // Check if platform index is divisible by 10 and label it
                 if ((plat.number) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
@@ -499,8 +506,13 @@
                 }
 
                 if (plat.hasStar) {
-                    // Draw star
-                    ctx.drawImage(starImage, starPowerup.x, starPowerup.y, starPowerup.width, starPowerup.height);
+                    plat.star = {
+                        x: plat.x + plat.width / 2 - starPowerup.width / 2,
+                        y: plat.y - starPowerup.height,
+                        width: starPowerup.width,
+                        height: starPowerup.height,
+                        image: starImage
+                    };
                 }
             });
             

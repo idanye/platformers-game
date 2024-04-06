@@ -16,9 +16,9 @@
         const ctx = canvas.getContext('2d');
 
         // Game settings
-        const gravity = 0.3;
-        const friction = 0.7;
-        const baseJump = -8; // Base jump velocity
+        const gravity = 0.5;
+        const friction = 0.8;
+        const baseJump = -10; // Base jump velocity
 
         // Platforms
         let platforms = [];
@@ -38,11 +38,13 @@
 
         // Define variables for the assets
         var background = new Image();
-        var platformImage = new Image(); // Renamed variable
+        var platformImage = new Image();
+        var playerImage = new Image();
 
         // Set the source file paths for the assets
         background.src = 'sky-background.jpg'; 
         platformImage.src = 'green-platforms.jpg';
+        playerImage.src = 'girl-player.png'
 
         // Make sure to wait for the assets to load before trying to draw them
         background.onload = function() {
@@ -78,9 +80,9 @@
             // Initialize the player object
             player = {
                 x: canvas.width / 2,
-                y: canvas.height - 20,
-                width: 20,
-                height: 20,
+                y: canvas.height - 30,
+                width: 30,
+                height: 30,
                 speed: 5,
                 velX: 0,
                 velY: 0,
@@ -353,25 +355,15 @@
                 }   
 
                 // Check if platform should fall
-                if (platform.standTime > 160) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
+                if (platform.standTime > 180) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
                     platforms.splice(index, 1); // Remove platform from array
                     reachedPlatforms.delete(platform); // Remove from reachedPlatforms set if it was the one that fell
                     if (lastPlatform === platform)         lastPlatform = null; // Reset lastPlatform if it was the one that fell
                 }
             });
 
-            // If not on a platform and falling
-            if (!onPlatform && player.velY < 0 && hasPeaked) {
-                fallDuration++;
-            } else {
-                fallDuration = 0; // Reset if on a platform, moving upwards, or hasn't peaked yet
-                if (onPlatform || player.velY >= 0) {
-                    hasPeaked = false; // Reset hasPeaked if the player lands or starts going up again
-                }
-            }
-
             // Game over condition remains the same
-            if (fallDuration > 1  || player.y > canvas.height - player.height) {
+            if (player.y >= canvas.height - player.height) {
                 showGameOver();
             }
 
@@ -382,14 +374,10 @@
             ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
             // Draw player
-            ctx.fillStyle = 'red';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
 
             // Draw platforms and label for platforms divisible by 10
             platforms.forEach((plat) => {
-                ctx.fillStyle = 'black';
-                // ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
-                
                 ctx.drawImage(platformImage, plat.x, plat.y, plat.width, plat.height);
                 
                 // Check if platform index is divisible by 10 and label it

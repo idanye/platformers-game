@@ -31,7 +31,8 @@
         let highestPlatform = 10; // Initialize at the starting platform number
         let initialNumberOfPlatforms = 10;
         let platformCount = 0; // Tracks the total number of platforms created
-
+        let gameOver = false;
+        // let gameOverCounter = 0;
 
         let gameOverScreenExists = false; // New flag to check if game over screen already exists
         let player; // Define player globally
@@ -65,9 +66,6 @@
             // Now that the background is loaded, you can draw it to the canvas
             ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
         };
-
-        
-
 
         function createPlatform(checkOverlap = true) {
             let minVerticalDistance = 50; // Minimum vertical distance between platforms
@@ -142,6 +140,7 @@
         function addPlatformIfNeeded() {
            // Adjusted to add platforms at the top
             if (player.y < 100) { // Example condition to add new platform at top
+                platformCount++;
                 let newPlatform = createPlatform(true); // Temporarily disable overlap check for demonstration
                 newPlatform.y = Math.min(...platforms.map(p => p.y)) - (Math.random() * (100 - 50) + 50 ); // New platform above the highest one
                 platforms.push(newPlatform);
@@ -163,15 +162,15 @@
                 name: playerName
             };
 
-            if (playerName === '') {
-                // Ask the player for their name
-                player.name = prompt("Please enter your name:");
+            // if (playerName === '') {
+            //     // Ask the player for their name
+            //     player.name = prompt("Please enter your name:");
 
-                // If the player doesn't enter a name, provide a default one
-                if (player.name === null || player.name.trim() === "") {
-                    player.name = "Player Name";
-                }
-            }
+            //     // If the player doesn't enter a name, provide a default one
+            //     if (player.name === null || player.name.trim() === "") {
+            //         player.name = "Player Name";
+            //     }
+            // }
         }
 
         function updateMovingPlatforms() {
@@ -237,7 +236,13 @@
             currentlyOnPlatform = null;
             lastPlatform = null;
             reachedPlatforms.clear(); // Clear the set of reached platforms
+            gameOver = false;
+            // gameOverCounter = 0;
 
+            let firstPlatform = platforms[0]; // Get the first platform
+            player.x = firstPlatform.x + firstPlatform.width / 2; // Set player position on the platform
+            player.y = firstPlatform.y - player.height;
+            
             // Start the game loop
             requestAnimationFrame(updateGame);
         }
@@ -352,7 +357,7 @@
         // Call the initializePlayer function to start the process
         initializePlayer();
         resetGame();
-        
+
         function updateGame() {
             // Check key inputs
             if (keys[39]) { // right arrow
@@ -481,12 +486,12 @@
                 if (plat.hasStar && plat.star) {
                     ctx.drawImage(plat.star.image, plat.star.x, plat.star.y, plat.star.width, plat.star.height);
                 }
-
+                
                 // Check if platform index is divisible by 10 and label it
                 if ((plat.number) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
-                    console.log(plat.number)
-                    ctx.fillText(`${plat.number}`, plat.x + 5, plat.y + 20);
+                    console.log(platformCount)
+                    ctx.fillText(`${platformCount}`, plat.x + 5, plat.y + 20);
                 }
 
                 // Draw enemies if they exist on the platform
@@ -533,6 +538,17 @@
                     showGameOver(player.score); // Assuming 'player.score' holds the current score
                 }
             });
+
+            if (player.y >= canvas.height - player.height) {
+                gameOver = true
+                // gameOverCounter++;
+
+                if (gameOver) {
+                    console.log("Game over")
+                    showGameOver(player.score);
+                    return;
+                }                
+            }
  
             requestAnimationFrame(updateGame);
         }

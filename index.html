@@ -37,16 +37,28 @@
         let player; // Define player globally
         let fallDuration = 0; // Tracks how long the player has been falling
         let hasPeaked = false;
+        
+        let starPowerup = {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            width: 20,
+            height: 20,
+            collected: false,
+            effectDuration: 8000, // in milliseconds (8 seconds)
+            startTime: 0
+        };
 
         // Define variables for the assets
         var background = new Image();
         var platformImage = new Image();
         var playerImage = new Image();
+        var starImage = new Image();
 
         // Set the source file paths for the assets
         background.src = 'sky-background.jpg'; 
         platformImage.src = 'green-platforms.jpg';
         playerImage.src = 'girl-player.png'
+        starImage.scr = 'star.png'
 
         // Make sure to wait for the assets to load before trying to draw them
         background.onload = function() {
@@ -88,7 +100,15 @@
                 direction: 1, // Direction for moving platforms
                 maxHeight: newY - 50, // Maximum height for moving platforms
                 minHeight: newY + 50, // Minimum height for moving platforms
+                hasStar: Math.random() < 0.1, // 10% chance to have a star
             };
+
+            // If this platform has a star, position the star above the platform
+            if (platform.hasStar) {
+                starPowerup.x = platform.x + platform.width / 2 - starPowerup.width / 2;
+                starPowerup.y = platform.y - starPowerup.height;
+                starPowerup.collected = false;
+            }
 
             // Ensure that the new platform does not overlap with existing ones
             if (checkOverlap && platforms.length > 0) {
@@ -120,7 +140,7 @@
            // Adjusted to add platforms at the top
             if (player.y < 100) { // Example condition to add new platform at top
                 let newPlatform = createPlatform(true); // Temporarily disable overlap check for demonstration
-                newPlatform.y = Math.min(...platforms.map(p => p.y)) - Math.random() * (50 - 100) - 100; // New platform above the highest one
+                newPlatform.y = Math.min(...platforms.map(p => p.y)) - (Math.random() * (100 - 50) + 50 ); // New platform above the highest one
                 platforms.push(newPlatform);
             }
         }
@@ -147,6 +167,42 @@
                 // If the player doesn't enter a name, provide a default one
                 if (player.name === null || player.name.trim() === "") {
                     player.name = "Player Name";
+                }
+            }
+        }
+
+        function updateMovingPlatforms() {
+            platforms.forEach(plat => {
+                if (plat.moving) {
+                    // Update the platform's y position based on its direction
+                    plat.y += plat.direction * 2; 
+                    
+                    // Reverse direction if it reaches its maxHeight or minHeight
+                    if (plat.y <= plat.maxHeight || plat.y >= plat.minHeight) {
+                        plat.direction *= -1;
+                    }
+                }
+            });
+        }
+
+        function checkPlayerPowerupCollision() {
+            // If the star hasn't been collected and the player touches it
+            if (!starPowerup.collected &&
+                player.x < starPowerup.x + starPowerup.width &&
+                player.x + player.width > starPowerup.x &&
+                player.y < starPowerup.y + starPowerup.height &&
+                player.y + player.height > starPowerup.y) {
+
+                starPowerup.collected = true;
+                starPowerup.startTime = Date.now();
+            }
+        }
+
+        function updatePowerupEffect() {
+            if (starPowerup.collected) {
+                let elapsedTime = Date.now() - starPowerup.startTime;
+                if (elapsedTime > starPowerup.effectDuration) {
+                    starPowerup.collected = false; // Powerup effect ends
                 }
             }
         }
@@ -402,6 +458,9 @@
                 }
             });
 
+            updateMovingPlatforms();
+            checkPlayerPowerupCollision();
+            updatePowerupEffect();
 
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -438,6 +497,11 @@
                         }
                     }
                 }
+
+                if (plat.hasStar) {
+                    // Draw star
+                    ctx.drawImage(starImage, starPowerup.x, starPowerup.y, starPowerup.width, starPowerup.height);
+                }
             });
             
             addPlatformIfNeeded();
@@ -449,7 +513,7 @@
 
             // Player and enemy collision detection (simplified example)
             platforms.forEach(platform => {
-                if (platform.enemy && player.x < platform.enemy.x + 20 &&
+                if (platform.enemy && !starPowerup.collected && player.x < platform.enemy.x + 20 &&
                 player.x + player.width > platform.enemy.x &&
                 player.y < platform.enemy.y + 20 &&
                 player.y + player.height > platform.enemy.y) {

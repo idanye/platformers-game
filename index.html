@@ -183,13 +183,22 @@
         function updateMovingPlatforms() {
             platforms.forEach(plat => {
                 if (plat.moving) {
-                    // Update the platform's y position based on its direction
-                    plat.y += plat.direction * 2; 
-                    
-                    // Reverse direction if it reaches its maxHeight or minHeight
-                    if (plat.y <= plat.maxHeight || plat.y >= plat.minHeight) {
-                        plat.direction *= -1;
+                     // Apply movement based on current direction
+                    let newY = plat.y + plat.direction * 2;
+
+                    // Check if the platform exceeds its maxHeight limit
+                    if (newY <= plat.maxHeight) {
+                        newY = plat.maxHeight; // Prevent exceeding maxHeight
+                        plat.direction = 1; // Reverse direction to move downwards
                     }
+                    // Check if the platform exceeds its minHeight limit
+                    else if (newY >= plat.minHeight) {
+                        newY = plat.minHeight; // Prevent exceeding minHeight
+                        plat.direction = -1; // Reverse direction to move upwards
+                    }
+
+                    // Update the platform's position
+                    plat.y = newY;
                 }
             });
         }

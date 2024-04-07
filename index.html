@@ -132,17 +132,17 @@
                 } while (overlap);
             }
 
+            console.log("New platform count:", platformCount, "Assigned number:", platform.number);
+
             return platform;
         }
 
         function addPlatformIfNeeded() {
            // Adjusted to add platforms at the top
-            if (player.y < 100) { // Example condition to add new platform at top
-                let newPlatform = createPlatform(true); // Temporarily disable overlap check for demonstration
-                newPlatform.y = Math.min(...platforms.map(p => p.y)) - (Math.random() * (100 - 50) + 50 ); // New platform above the highest one
-                addAEnemyToPlatform(newPlatform); // Add an enemy specifically to the new platform
-                platforms.push(newPlatform);
-            }
+            let newPlatform = createPlatform(true);      
+            newPlatform.y = Math.min(...platforms.map(p => p.y)) - (Math.random() * (100 - 50) + 50 ); // New platform above the highest one
+            addAEnemyToPlatform(newPlatform); // Add an enemy specifically to the new platform
+            platforms.push(newPlatform);
         }
 
         function initializePlayer(playerName='') {
@@ -398,10 +398,11 @@
                     }
 
                     if (platform.y > canvas.height) {
-                        platform.y = 0;
-                        platform.x = Math.random() * (canvas.width - platform.width);
-                        platform.hasStar = Math.random() < 0.1; // Reassign star chance
-                        addAEnemyToPlatform(platform);
+                        // platform.y = 0;
+                        // platform.x = Math.random() * (canvas.width - platform.width);
+                        // platform.hasStar = Math.random() < 0.1; // Reassign star chance
+                        // addAEnemyToPlatform(platform);
+                        addPlatformIfNeeded();
                     }
                 });
             }
@@ -499,8 +500,6 @@
                 }
             });
             
-            addPlatformIfNeeded();
-
             // Draw score
             ctx.fillStyle = 'black';
             ctx.font = '20px Arial';

@@ -105,12 +105,6 @@
                 hasStar: Math.random() < 0.1, // 10% chance to have a star
             };
 
-            // After calculating newY, adjust for moving platforms
-            if(platform.moving) {
-                // Adjust maxHeight and minHeight to ensure the platform remains in the allowed area
-                platform.maxHeight = Math.max(platform.maxHeight, newY - 100); // Ensure it doesn't go too high
-                platform.minHeight = Math.min(platform.minHeight, newY + 100); // Ensure it doesn't go too low
-            }
 
             // If this platform has a star, position the star above the platform
             if (platform.hasStar) {
@@ -148,6 +142,7 @@
            // Adjusted to add platforms at the top
             let newPlatform = createPlatform(true);      
             newPlatform.y = Math.min(...platforms.map(p => p.y)) - (Math.random() * (100 - 50) + 50 ); // New platform above the highest one
+            
             if (!newPlatform.moving) { // Ensure enemies are not added to moving platforms
                 addAEnemyToPlatform(newPlatform);
             }
@@ -181,24 +176,28 @@
         }
 
         function updateMovingPlatforms() {
-            platforms.forEach(plat => {
+            platforms.forEach((plat, index) => {
+                const verticalSpeed = 2; // The rate at which the platform moves vertically
+
+                // Predict the platform's next position
+                let nextYPosition = plat.y + (plat.direction * verticalSpeed);
+                
                 if (plat.moving) {
                      // Apply movement based on current direction
                     let newY = plat.y + plat.direction * 2;
 
-                    // Check if the platform exceeds its maxHeight limit
-                    if (newY <= plat.maxHeight) {
-                        newY = plat.maxHeight; // Prevent exceeding maxHeight
-                        plat.direction = 1; // Reverse direction to move downwards
-                    }
-                    // Check if the platform exceeds its minHeight limit
-                    else if (newY >= plat.minHeight) {
-                        newY = plat.minHeight; // Prevent exceeding minHeight
-                        plat.direction = -1; // Reverse direction to move upwards
+                    if (nextYPosition <= plat.maxHeight || nextYPosition >= plat.minHeight) {
+                        plat.direction *= -1; // Reverse direction
+                        nextYPosition = plat.y + (plat.direction * verticalSpeed); // Recalculate next position after direction change
                     }
 
-                    // Update the platform's position
-                    plat.y = newY;
+                    // Apply the calculated position
+                    plat.y = nextYPosition;
+                }
+
+                // Check if the platform is out of bounds - either above the top or about to move below the bottom edge of the screen
+                if (plat.y + plat.height < 0 || nextYPosition > canvas.height) { 
+                    platformsToRemove.add(index);
                 }
             });
         }

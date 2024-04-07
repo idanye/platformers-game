@@ -164,15 +164,15 @@
                 name: playerName
             };
 
-            // if (playerName === '') {
-            //     // Ask the player for their name
-            //     player.name = prompt("Please enter your name:");
+            if (playerName === '') {
+                // Ask the player for their name
+                player.name = prompt("Please enter your name:");
 
-            //     // If the player doesn't enter a name, provide a default one
-            //     if (player.name === null || player.name.trim() === "") {
-            //         player.name = "Player Name";
-            //     }
-            // }
+                // If the player doesn't enter a name, provide a default one
+                if (player.name === null || player.name.trim() === "") {
+                    player.name = "Player Name";
+                }
+            }
         }
 
         function updateMovingPlatforms() {

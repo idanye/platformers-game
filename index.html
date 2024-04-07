@@ -28,6 +28,7 @@
         let currentlyOnPlatform = null; // Track the current platform player is on
         let lastPlatform = null; // Variable to track the last platform
         let reachedPlatforms = new Set(); // Initialize a set to track reached platforms
+        let platformsToRemove = new Set();
         let highestPlatform = 10; // Initialize at the starting platform number
         let initialNumberOfPlatforms = 10;
         let platformCount = 0; // Tracks the total number of platforms created
@@ -97,12 +98,19 @@
                 height: 10,
                 number: platformCount, // Use platformCount for a unique identifier
                 standTime: 0,
-                moving: false, // 6% chance to move up and down
+                moving: Math.random() < 0.06, // 6% chance to move up and down
                 direction: 1, // Direction for moving platforms
                 maxHeight: newY - 50, // Maximum height for moving platforms
                 minHeight: newY + 50, // Minimum height for moving platforms
                 hasStar: Math.random() < 0.1, // 10% chance to have a star
             };
+
+            // After calculating newY, adjust for moving platforms
+            if(platform.moving) {
+                // Adjust maxHeight and minHeight to ensure the platform remains in the allowed area
+                platform.maxHeight = Math.max(platform.maxHeight, newY - 100); // Ensure it doesn't go too high
+                platform.minHeight = Math.min(platform.minHeight, newY + 100); // Ensure it doesn't go too low
+            }
 
             // If this platform has a star, position the star above the platform
             if (platform.hasStar) {
@@ -116,21 +124,19 @@
                 let overlap;
                 let attempts = 0;
                 do {
-                    overlap = false;
-                    for (let i = 0; i < platforms.length; i++) {
-                        let other = platforms[i];
+                    overlap = platforms.some(other => {
                         let horizontalOverlap = platform.x < other.x + other.width && platform.x + platform.width > other.x;
-                        let verticalOverlap = Math.abs(platform.y - other.y) < platform.height + other.height;
-                        if (horizontalOverlap && verticalOverlap) {
-                            overlap = true;
-                            platform.y = other.y - platform.height - 10; // Adjust vertically
-                            platform.x = Math.random() * (canvas.width - platform.width); // Adjust horizontally
-                            break; // Check for overlaps again
-                        }
+                        let verticalOverlap = Math.abs(platform.y - other.y) < minVerticalDistance + platform.height + other.height;
+                        return horizontalOverlap && verticalOverlap;
+                    });
+
+                    if (overlap) {
+                        // Adjust platform position again
+                        platform.y -= minVerticalDistance; // Increase vertical distance
+                        platform.x = Math.random() * (canvas.width - platform.width); // Adjust horizontally
                     }
                     attempts++;
-                    if (attempts > 100) break; // Prevent infinite loop by limiting attempts
-                } while (overlap);
+                } while (overlap && attempts < 100);
             }
 
             console.log("New platform count:", platformCount, "Assigned number:", platform.number);
@@ -142,7 +148,9 @@
            // Adjusted to add platforms at the top
             let newPlatform = createPlatform(true);      
             newPlatform.y = Math.min(...platforms.map(p => p.y)) - (Math.random() * (100 - 50) + 50 ); // New platform above the highest one
-            addAEnemyToPlatform(newPlatform); // Add an enemy specifically to the new platform
+            if (!newPlatform.moving) { // Ensure enemies are not added to moving platforms
+                addAEnemyToPlatform(newPlatform);
+            }
             platforms.push(newPlatform);
         }
 
@@ -221,6 +229,7 @@
             platforms = [];
             platformCount = 0; // Reset platformCount if you want to start numbering from 1 again
             highestPlatform = 0; // Reset highest platform tracker
+            platformsToRemove = new Set();
 
             // Create an initial set of platforms
             for (let i = 0; i < initialNumberOfPlatforms; i++) {
@@ -262,7 +271,7 @@
 
         function addAEnemyToPlatform(platform) {
             // Given a single platform, decide if an enemy should be added based on the 5% chance
-            if (Math.random() < 0.05) { // 5% chance to add an enemy
+            if (!platform.moving && Math.random() < 0.05) { // 5% chance to add an enemy
                 const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
                 platform.enemy = {
                     type: enemyType,
@@ -346,6 +355,8 @@
         resetGame();
 
         function updateGame() {
+            let platformsToRemove = new Set();
+
             // Check key inputs
             if (keys[39]) { // right arrow
                 if (player.velX < player.speed) {
@@ -393,12 +404,17 @@
             let shouldAddPlatform = false; // Flag to determine if a new platform should be added
             if (player.y < canvas.height / 4) {
                 player.y += Math.abs(player.velY);
-                platforms.forEach(platform => {
+                platforms.forEach((platform, index) => {
                     const deltaY = Math.abs(player.velY); // Calculate once, use for both platform and enemy
                     platform.y += deltaY;
                     
                     if (platform.enemy) { // Adjust enemy's y position along with its platform
                         platform.enemy.y += deltaY;
+                    }
+                    
+                    // If platform has moved above the top edge, mark it for removal
+                    if (platform.y < -platform.height) {
+                        platformsToRemove.add(index);
                     }
 
                     if (platform.y > canvas.height) {
@@ -446,8 +462,9 @@
 
                 // Check if platform should fall
                 if (platform.standTime > 180) { // Assuming 60 frames per second, 180 frames is roughly 3 seconds
-                    platforms.splice(index, 1); // Remove platform from array
+                    platformsToRemove.add(index); // Mark this platform for removal                    
                     reachedPlatforms.delete(platform); // Remove from reachedPlatforms set if it was the one that fell
+
                     if (lastPlatform === platform)         lastPlatform = null; // Reset lastPlatform if it was the one that fell
                      // If the player is falling (no platforms below) and has reached peak fall velocity, game over
                     if (!onPlatform && platform.standTime > 180) {
@@ -455,6 +472,9 @@
                     }
                 }
             });
+
+            // After the loop has finished, filter out the platforms marked for removal
+            platforms = platforms.filter((_, index) => !platformsToRemove.has(index));
 
             updateMovingPlatforms();
             checkPlayerPowerupCollision();
@@ -478,9 +498,9 @@
                 }
                 
                 // Check if platform index is divisible by 10 and label it
-                if ((plat.number) % 10 === 0) {
+                if ((plat.number + 1) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
-                    ctx.fillText(`${plat.number}`, plat.x + 5, plat.y + 20);
+                    ctx.fillText(`${plat.number + 1}`, plat.x + 5, plat.y + 20);
                 }
 
                 // Draw enemies if they exist on the platform
@@ -530,10 +550,8 @@
 
             if (player.y >= canvas.height - player.height) {
                 gameOver = true
-                // gameOverCounter++;
 
                 if (gameOver) {
-                    console.log("Game over")
                     showGameOver(player.score);
                     return;
                 }                

@@ -37,7 +37,6 @@
         let gameOverScreenExists = false; // New flag to check if game over screen already exists
         let player; // Define player globally
         let fallDuration = 0; // Tracks how long the player has been falling
-        let hasPeaked = false;
         
         let starPowerup = {
             x: Math.random() * canvas.width,
@@ -119,14 +118,13 @@
                     overlap = false;
                     for (let i = 0; i < platforms.length; i++) {
                         let other = platforms[i];
-                        if (Math.abs(platform.y - other.y) < platform.height + 10 && platform.x < other.x + other.width && platform.x + platform.width > other.x) {
-                            // Adjust newY to avoid overlap
-                            platform.y = other.y - platform.height - Math.random() * (50 - 100) - 50; // Ensure newY is above and not overlapping
-                            if (platform.y < 0) { // If newY is out of bounds, reset it near the top
-                                platform.y = 10 + Math.random() * 40;
-                            }
+                        let horizontalOverlap = platform.x < other.x + other.width && platform.x + platform.width > other.x;
+                        let verticalOverlap = Math.abs(platform.y - other.y) < platform.height + other.height;
+                        if (horizontalOverlap && verticalOverlap) {
                             overlap = true;
-                            break; // Exit loop to recheck after adjustment
+                            platform.y = other.y - platform.height - 10; // Adjust vertically
+                            platform.x = Math.random() * (canvas.width - platform.width); // Adjust horizontally
+                            break; // Check for overlaps again
                         }
                     }
                     attempts++;
@@ -140,9 +138,9 @@
         function addPlatformIfNeeded() {
            // Adjusted to add platforms at the top
             if (player.y < 100) { // Example condition to add new platform at top
-                platformCount++;
                 let newPlatform = createPlatform(true); // Temporarily disable overlap check for demonstration
                 newPlatform.y = Math.min(...platforms.map(p => p.y)) - (Math.random() * (100 - 50) + 50 ); // New platform above the highest one
+                addAEnemyToPlatform(newPlatform); // Add an enemy specifically to the new platform
                 platforms.push(newPlatform);
             }
         }
@@ -223,14 +221,13 @@
             platformCount = 0; // Reset platformCount if you want to start numbering from 1 again
             highestPlatform = 0; // Reset highest platform tracker
 
-
             // Create an initial set of platforms
             for (let i = 0; i < initialNumberOfPlatforms; i++) {
-                platforms.push(createPlatform(false));
+                newPlatform = createPlatform(false);
+                platforms.push(newPlatform);
+                addAEnemyToPlatform(newPlatform);
             }
-            
-            addEnemiesToPlatforms();
-            
+                        
             // Reset other game state variables if needed
             onPlatform = false;
             currentlyOnPlatform = null;
@@ -239,9 +236,9 @@
             gameOver = false;
             // gameOverCounter = 0;
 
-            let firstPlatform = platforms[0]; // Get the first platform
-            player.x = firstPlatform.x + firstPlatform.width / 2; // Set player position on the platform
-            player.y = firstPlatform.y - player.height;
+            let playerPlatformPlace = platforms[0]; // Get the first platform
+            player.x = playerPlatformPlace.x + playerPlatformPlace.width / 2; // Set player position on the platform
+            player.y = playerPlatformPlace.y - player.height;
             
             // Start the game loop
             requestAnimationFrame(updateGame);
@@ -260,32 +257,19 @@
             keys[e.keyCode] = false;
         });
 
-        function addEnemiesToPlatforms() {
-            // Clear existing enemies first
-            platforms.forEach(platform => delete platform.enemy);
-        
-            // Pick one platform to have an enemy, ensuring only 5% (one out of initial 10) has an enemy
-            let numberOfEnemies = Math.ceil(0.05 * initialNumberOfPlatforms);
-            // Create a set of unique platform indices to assign enemies to
-            let uniqueIndices = new Set();
-
-            while (uniqueIndices.size < numberOfEnemies) {
-                let randomIndex = Math.floor(Math.random() * platforms.length);
-                uniqueIndices.add(randomIndex);
-            }
-            
-            // Assign an enemy to each unique index
-            uniqueIndices.forEach(index => {
+        function addAEnemyToPlatform(platform) {
+            // Given a single platform, decide if an enemy should be added based on the 5% chance
+            if (Math.random() < 0.05) { // 5% chance to add an enemy
                 const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
-                platforms[index].enemy = {
+                platform.enemy = {
                     type: enemyType,
-                    x: platforms[index].x + (platforms[index].width - 20) / 2, // Center enemy on platform
-                    y: platforms[index].y - 20, // Place enemy above the platform
+                    x: platform.x + (platform.width / 2) - 10, // Center enemy on platform
+                    y: platform.y - 20, // Place enemy above the platform
                 };
                 if (enemyType === 'Type2') {
-                    platforms[index].enemyDirection = Math.random() < 0.5 ? -1 : 1; // Randomly set initial direction
+                    platform.enemyDirection = Math.random() < 0.5 ? -1 : 1; // Randomly set initial direction
                 }
-            });
+            }
         }
 
         // Function to update the leaderboard - simplistic version
@@ -402,28 +386,22 @@
                 player.y = nextY;
             }
 
-            // Within your game update loop or function
-            // If the player is jumping and reaches the peak of the jump
-            if (player.jumping && player.velY > 0) {
-                hasPeaked = true; // The player has peaked in their jump
-            }
-
             // Screen scroll
             if (player.y < canvas.height / 4) {
                 player.y += Math.abs(player.velY);
                 platforms.forEach(platform => {
                     const deltaY = Math.abs(player.velY); // Calculate once, use for both platform and enemy
                     platform.y += deltaY;
+                    
                     if (platform.enemy) { // Adjust enemy's y position along with its platform
                         platform.enemy.y += deltaY;
                     }
+
                     if (platform.y > canvas.height) {
                         platform.y = 0;
                         platform.x = Math.random() * (canvas.width - platform.width);
-                        // Reset enemy position as well if platform resets to top
-                        if (platform.enemy) {
-                            platform.enemy.y = platform.y - 20;
-                        }
+                        platform.hasStar = Math.random() < 0.1; // Reassign star chance
+                        addAEnemyToPlatform(platform);
                     }
                 });
             }
@@ -490,8 +468,8 @@
                 // Check if platform index is divisible by 10 and label it
                 if ((plat.number) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
-                    console.log(platformCount)
-                    ctx.fillText(`${platformCount}`, plat.x + 5, plat.y + 20);
+                    console.log(plat.number)
+                    ctx.fillText(`${plat.number}`, plat.x + 5, plat.y + 20);
                 }
 
                 // Draw enemies if they exist on the platform
@@ -528,14 +506,16 @@
             ctx.font = '20px Arial';
             ctx.fillText(`Score: ${player.score}`, 10, 30);
 
-            // Player and enemy collision detection (simplified example)
+            // Player and enemy collision detection
             platforms.forEach(platform => {
-                if (platform.enemy && !starPowerup.collected && player.x < platform.enemy.x + 20 &&
-                player.x + player.width > platform.enemy.x &&
+                if (platform.enemy && player.x < platform.enemy.x + 20 && player.x + player.width > platform.enemy.x &&
                 player.y < platform.enemy.y + 20 &&
                 player.y + player.height > platform.enemy.y) {
-                    // Handle player death or game over differently
-                    showGameOver(player.score); // Assuming 'player.score' holds the current score
+                    // If the star powerup has been collected, its effect is active, so do nothing
+                    // If not, the player should die upon enemy collision
+                    if (!starPowerup.collected) {
+                        showGameOver(player.score);
+                    }
                 }
             });
 

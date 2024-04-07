@@ -183,16 +183,15 @@
                 let nextYPosition = plat.y + (plat.direction * verticalSpeed);
                 
                 if (plat.moving) {
-                     // Apply movement based on current direction
-                    let newY = plat.y + plat.direction * 2;
-
-                    if (nextYPosition <= plat.maxHeight || nextYPosition >= plat.minHeight) {
-                        plat.direction *= -1; // Reverse direction
-                        nextYPosition = plat.y + (plat.direction * verticalSpeed); // Recalculate next position after direction change
+                    // Check boundaries and adjust direction if necessary
+                    if (nextYPosition <= plat.maxHeight) {
+                        plat.direction = 1; // Downwards
+                    } else if (nextYPosition >= plat.minHeight) {
+                        plat.direction = -1; // Upwards
                     }
 
-                    // Apply the calculated position
-                    plat.y = nextYPosition;
+                    // Apply the movement
+                    plat.y *= plat.direction * verticalSpeed;
                 }
 
                 // Check if the platform is out of bounds - either above the top or about to move below the bottom edge of the screen

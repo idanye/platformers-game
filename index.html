@@ -32,11 +32,12 @@
         let initialNumberOfPlatforms = 10;
         let platformCount = 0; // Tracks the total number of platforms created
         let gameOver = false;
-        // let gameOverCounter = 0;
 
         let gameOverScreenExists = false; // New flag to check if game over screen already exists
         let player; // Define player globally
-        let fallDuration = 0; // Tracks how long the player has been falling
+        
+        let lastPlatformAddedAt = 0; // Timestamp of last platform addition
+        const platformAdditionCooldown = 1000; // Cooldown period in milliseconds (1 second)
         
         let starPowerup = {
             x: Math.random() * canvas.width,
@@ -227,6 +228,8 @@
                 platforms.push(newPlatform);
                 addAEnemyToPlatform(newPlatform);
             }
+
+            highestPlatform = platforms.reduce((acc, plat) => plat.y < acc.y ? plat : acc, platforms[0]);
                         
             // Reset other game state variables if needed
             onPlatform = false;
@@ -387,6 +390,7 @@
             }
 
             // Screen scroll
+            let shouldAddPlatform = false; // Flag to determine if a new platform should be added
             if (player.y < canvas.height / 4) {
                 player.y += Math.abs(player.velY);
                 platforms.forEach(platform => {
@@ -398,13 +402,20 @@
                     }
 
                     if (platform.y > canvas.height) {
-                        // platform.y = 0;
-                        // platform.x = Math.random() * (canvas.width - platform.width);
-                        // platform.hasStar = Math.random() < 0.1; // Reassign star chance
-                        // addAEnemyToPlatform(platform);
-                        addPlatformIfNeeded();
+                        shouldAddPlatform = true; // Set flag to true if any platform exits the screen
+                        highestPlatform = platforms.reduce((acc, plat) => plat.y < acc.y ? plat : acc, platforms[0]);
                     }
                 });
+
+                let currentTime = Date.now();
+                // Check if the highest platform is too far below the player, indicating an urgent need for a new platform
+                let urgentNeedForPlatform = player.y < highestPlatform.y + 100; // Example condition
+
+                // Adjust the condition to add a platform immediately if there's an urgent need
+                if (shouldAddPlatform && (urgentNeedForPlatform || currentTime - lastPlatformAddedAt > platformAdditionCooldown)) {
+                    addPlatformIfNeeded();
+                    lastPlatformAddedAt = currentTime;
+                }
             }
 
             platforms.forEach((platform, index) => {
@@ -469,7 +480,6 @@
                 // Check if platform index is divisible by 10 and label it
                 if ((plat.number) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
-                    console.log(plat.number)
                     ctx.fillText(`${plat.number}`, plat.x + 5, plat.y + 20);
                 }
 

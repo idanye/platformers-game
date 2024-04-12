@@ -74,7 +74,7 @@
 
             // Calculate newY for the new platform, ensuring it's within bounds
             let lastY = platforms.length > 0 ? platforms[platforms.length - 1].y : canvas.height - minVerticalDistance;
-            let newY = Math.max(15, lastY - (minVerticalDistance + Math.floor(Math.random() * (maxVerticalDistance - minVerticalDistance))));
+            let newY = Math.max(20, lastY - (minVerticalDistance + Math.floor(Math.random() * (maxVerticalDistance - minVerticalDistance))));
 
             // Adjust width for every 10th platform
             let width = platformCount % 10 === 0 ? canvas.width : 100;
@@ -151,7 +151,7 @@
 
         function updateMovingPlatforms() {
             platforms.forEach((plat, index) => {
-                const verticalSpeed = 2; // The rate at which the platform moves vertically
+                const verticalSpeed = 1; // The rate at which the platform moves vertically
 
                 // Predict the platform's next position
                 let nextYPosition = plat.y + (plat.direction * verticalSpeed);

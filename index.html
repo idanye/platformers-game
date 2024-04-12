@@ -68,26 +68,16 @@
             ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
         };
 
-        function createPlatform(checkOverlap = true) {
+        function createPlatform() {
             let minVerticalDistance = 50; // Minimum vertical distance between platforms
-            let maxVerticalDistance = 150; // Maximum vertical distance to ensure platforms are reachable
+            let maxVerticalDistance = 100; // Maximum vertical distance to ensure platforms are reachable
 
-            // Find the last platform's Y position
-            let lastPlatform = platforms.length > 0 ? platforms[platforms.length - 1] : null;
-            let lastY = lastPlatform ? lastPlatform.y : canvas.height - 50;
-            
-            // Calculate newY for the new platform
-            let newY = lastY - minVerticalDistance - Math.floor(Math.random() * (maxVerticalDistance - minVerticalDistance));
+            // Calculate newY for the new platform, ensuring it's within bounds
+            let lastY = platforms.length > 0 ? platforms[platforms.length - 1].y : canvas.height - minVerticalDistance;
+            let newY = Math.max(15, lastY - (minVerticalDistance + Math.floor(Math.random() * (maxVerticalDistance - minVerticalDistance))));
 
-            if (newY < 0) {
-                newY = canvas.height - 50; // Reset newY if it goes out of bounds
-            }
-
-            // Define width, with every 10th platform being wider
-            let width = 100;
-            if (platformCount % 10 === 0) {
-                width = canvas.width; // Make the platform wider
-            }
+            // Adjust width for every 10th platform
+            let width = platformCount % 10 === 0 ? canvas.width : 100;
 
             // Increment platformCount to ensure a unique number for each platform
             platformCount++;
@@ -106,7 +96,6 @@
                 hasStar: Math.random() < 0.1, // 10% chance to have a star
             };
 
-
             // If this platform has a star, position the star above the platform
             if (platform.hasStar) {
                 starPowerup.x = platform.x + platform.width / 2 - starPowerup.width / 2;
@@ -121,8 +110,7 @@
 
         function addPlatformIfNeeded() {
            // Adjusted to add platforms at the top
-            let newPlatform = createPlatform(true);      
-            newPlatform.y = Math.min(...platforms.map(p => p.y)) - (Math.random() * (100 - 50) + 50 ); // New platform above the highest one
+            let newPlatform = createPlatform();      
             
             if (!newPlatform.moving) { // Ensure enemies are not added to moving platforms
                 addAEnemyToPlatform(newPlatform);
@@ -221,7 +209,7 @@
 
             // Create an initial set of platforms
             for (let i = 0; i < initialNumberOfPlatforms; i++) {
-                newPlatform = createPlatform(false);
+                newPlatform = createPlatform();
                 platforms.push(newPlatform);
                 addAEnemyToPlatform(newPlatform);
             }
@@ -488,9 +476,9 @@
                 }
                 
                 // Check if platform index is divisible by 10 and label it
-                if ((plat.number + 1) % 10 === 0) {
+                if ((plat.number) % 10 === 0) {
                     ctx.fillStyle = 'white'; // Contrast color for visibility
-                    ctx.fillText(`${plat.number + 1}`, plat.x + 5, plat.y + 20);
+                    ctx.fillText(`${plat.number}`, plat.x + 5, plat.y + 20);
                 }
 
                 // Draw enemies if they exist on the platform

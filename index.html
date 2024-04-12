@@ -78,6 +78,7 @@
             
             // Calculate newY for the new platform
             let newY = lastY - minVerticalDistance - Math.floor(Math.random() * (maxVerticalDistance - minVerticalDistance));
+
             if (newY < 0) {
                 newY = canvas.height - 50; // Reset newY if it goes out of bounds
             }
@@ -111,26 +112,6 @@
                 starPowerup.x = platform.x + platform.width / 2 - starPowerup.width / 2;
                 starPowerup.y = platform.y - starPowerup.height;
                 starPowerup.collected = false;
-            }
-
-            // Ensure that the new platform does not overlap with existing ones
-            if (checkOverlap && platforms.length > 0) {
-                let overlap;
-                let attempts = 0;
-                do {
-                    overlap = platforms.some(other => {
-                        let horizontalOverlap = platform.x < other.x + other.width && platform.x + platform.width > other.x;
-                        let verticalOverlap = Math.abs(platform.y - other.y) < minVerticalDistance + platform.height + other.height;
-                        return horizontalOverlap && verticalOverlap;
-                    });
-
-                    if (overlap) {
-                        // Adjust platform position again
-                        platform.y -= minVerticalDistance; // Increase vertical distance
-                        platform.x = Math.random() * (canvas.width - platform.width); // Adjust horizontally
-                    }
-                    attempts++;
-                } while (overlap && attempts < 100);
             }
 
             console.log("New platform count:", platformCount, "Assigned number:", platform.number);
@@ -278,7 +259,7 @@
 
         function addAEnemyToPlatform(platform) {
             // Given a single platform, decide if an enemy should be added based on the 5% chance
-            if (!platform.moving && Math.random() < 0.05) { // 5% chance to add an enemy
+            if (!platform.moving && !platform.hasStar && Math.random() < 0.05) { // 5% chance to add an enemy
                 const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
                 platform.enemy = {
                     type: enemyType,
@@ -414,7 +395,9 @@
                 platforms.forEach((platform, index) => {
                     const deltaY = Math.abs(player.velY); // Calculate once, use for both platform and enemy
                     platform.y += deltaY;
-                    
+                    platform.maxHeight += deltaY;
+                    platform.minHeight += deltaY;
+
                     if (platform.enemy) { // Adjust enemy's y position along with its platform
                         platform.enemy.y += deltaY;
                     }

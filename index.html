@@ -94,7 +94,12 @@
                 maxHeight: newY - 50, // Maximum height for moving platforms
                 minHeight: newY + 50, // Minimum height for moving platforms
                 hasStar: Math.random() < 0.1, // 10% chance to have a star
+                hasEnemy: false,
             };
+
+            if (!platform.hasStar && !platform.moving ) {
+                platform.hasEnemy = Math.random() < 0.05;
+            }
 
             // If this platform has a star, position the star above the platform
             if (platform.hasStar) {
@@ -160,7 +165,7 @@
                     }
 
                     // Apply the movement
-                    plat.y *= plat.direction * verticalSpeed;
+                    plat.y += plat.direction * verticalSpeed;
                 }
 
                 // Check if the platform is out of bounds - either above the top or about to move below the bottom edge of the screen
@@ -247,7 +252,7 @@
 
         function addAEnemyToPlatform(platform) {
             // Given a single platform, decide if an enemy should be added based on the 5% chance
-            if (!platform.moving && !platform.hasStar && Math.random() < 0.05) { // 5% chance to add an enemy
+            if (platform.hasEnemy) { // 5% chance to add an enemy
                 const enemyType = Math.random() < 0.5 ? 'Type1' : 'Type2';
                 platform.enemy = {
                     type: enemyType,
